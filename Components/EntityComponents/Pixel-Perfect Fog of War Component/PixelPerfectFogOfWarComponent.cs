@@ -1,5 +1,6 @@
+using System;
 /// Component created by Marius van den Oever for RTS Engine 2023.0.1 and Pixel Perfect Fog Of war 1.6.5
-/// Component version 1 (2023-08-04)
+/// Component version 1.1 (2023-08-05)
 /// Engine 2023.0.1 - https://assetstore.unity.com/packages/tools/game-toolkits/rts-engine-2023-79732
 /// Pixel Perfect Fog Of war 1.6.5 https://assetstore.unity.com/packages/vfx/shaders/fullscreen-camera-effects/pixel-perfect-fog-of-war-229484
 /// Instructions
@@ -10,10 +11,9 @@ using FOW;
 using RTSEngine;
 using RTSEngine.Entities;
 using RTSEngine.EntityComponent;
-using System;
 using UnityEngine;
 
-[RequireComponent(typeof(FogOfWarRevealer))]
+[RequireComponent(typeof(FogOfWarRevealer3D))]
 [RequireComponent(typeof(FogOfWarHider))]
 public class PixelPerfectFogOfWarComponent
     : EntityComponentBase
@@ -30,18 +30,18 @@ public class PixelPerfectFogOfWarComponent
         _hider = GetComponent<FogOfWarHider>();
 
         _hider.OnActiveChanged += _hider_OnActiveChanged;
-        this.Entity.EntityInitiated += Entity_EntityInitiated;
-        this.Entity.FactionUpdateComplete += Entity_FactionUpdateComplete;
+        Entity.EntityInitiated += Entity_EntityInitiated;
+        Entity.FactionUpdateComplete += Entity_FactionUpdateComplete;
 
         base.OnInit();
     }
 
     private void OnDestroy()
     {
-        if (this.Entity == null) { return; }
+        if (Entity == null) { return; }
 
-        this.Entity.EntityInitiated -= Entity_EntityInitiated;
-        this.Entity.FactionUpdateComplete -= Entity_FactionUpdateComplete;
+        Entity.EntityInitiated -= Entity_EntityInitiated;
+        Entity.FactionUpdateComplete -= Entity_FactionUpdateComplete;
     }
 
     #region Event listener implementation
