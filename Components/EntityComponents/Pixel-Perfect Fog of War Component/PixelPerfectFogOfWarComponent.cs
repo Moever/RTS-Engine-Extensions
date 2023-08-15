@@ -1,6 +1,7 @@
 using System;
+using Assets._GAME.Scripts.Components;
 /// Component created by Marius van den Oever for RTS Engine 2023.0.1 and Pixel Perfect Fog Of war 1.6.5
-/// Component version 1.1 (2023-08-05)
+/// Component version 1.2 (2023-08-15)
 /// Engine 2023.0.1 - https://assetstore.unity.com/packages/tools/game-toolkits/rts-engine-2023-79732
 /// Pixel Perfect Fog Of war 1.6.5 https://assetstore.unity.com/packages/vfx/shaders/fullscreen-camera-effects/pixel-perfect-fog-of-war-229484
 /// Instructions
@@ -23,19 +24,40 @@ public class PixelPerfectFogOfWarComponent
 
     [SerializeField, Tooltip("Do you want to completely hide this entity if it's in the fog and not visible? If false, it will be shown according to your Fog of War world setttings.")]
     private bool _hideInFog = true;
-
+    public override bool AllowPreEntityInit => true;
     protected override void OnInit()
     {
         _revealer = GetComponent<FogOfWarRevealer>();
         _hider = GetComponent<FogOfWarHider>();
+        _revealer.enabled = false;
+        _hider.enabled = false;
 
         _hider.OnActiveChanged += _hider_OnActiveChanged;
         Entity.EntityInitiated += Entity_EntityInitiated;
         Entity.FactionUpdateComplete += Entity_FactionUpdateComplete;
 
+
+
+        // Building specific events
+        if (Entity is Building building)
+        {
+            building.BuildingBuilt += Building_BuildingBuilt;
+        }
         base.OnInit();
     }
 
+    private void Building_BuildingBuilt(IBuilding sender, EventArgs args)
+    {
+        _reEvaluateVisibility();
+    }
+
+    private void LateUpdate()
+    {
+        if (Input.GetKeyDown(KeyCode.F1))
+        {
+            _reEvaluateVisibility();
+        }
+    }
     private void OnDestroy()
     {
         if (Entity == null) { return; }
@@ -61,8 +83,16 @@ public class PixelPerfectFogOfWarComponent
     /// </summary>
     private void _reEvaluateVisibility()
     {
+        if (Entity is Building building)
+        {
+            if (building.IsPlacementInstance)
+            {
+                return;
+            }
+        }
+
         // Default behaviour : show for local player and hide if it's not the local player
-        if (Entity.IsLocalPlayerFaction())
+        if (Entity.IsLocalPlayerFaction() || PixelPerfectFogOfWarWorldComponent.ShowAllEntities)
         {
             _revealer.enabled = true;
             _hider.enabled = false;
@@ -88,7 +118,7 @@ public class PixelPerfectFogOfWarComponent
     /// <param name="isActive"></param>
     private void _hider_OnActiveChanged(bool isActive)
     {
-        // Should not be visible..
+        // Should not be visible..        
         Entity.Model.SetActive(isActive);
     }
 }
