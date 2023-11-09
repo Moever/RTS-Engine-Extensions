@@ -1,7 +1,7 @@
 using System;
 using Assets._GAME.Scripts.Components;
 /// Component created by Marius van den Oever for RTS Engine 2023.0.1 and Pixel Perfect Fog Of war 1.6.5
-/// Component version 1.2 (2023-08-15)
+/// Component version 1.2 (2023-11-09)
 /// Engine 2023.0.1 - https://assetstore.unity.com/packages/tools/game-toolkits/rts-engine-2023-79732
 /// Pixel Perfect Fog Of war 1.6.5 https://assetstore.unity.com/packages/vfx/shaders/fullscreen-camera-effects/pixel-perfect-fog-of-war-229484
 /// Instructions
@@ -12,6 +12,7 @@ using FOW;
 using RTSEngine;
 using RTSEngine.Entities;
 using RTSEngine.EntityComponent;
+using RTSEngine.Event;
 using UnityEngine;
 
 [RequireComponent(typeof(FogOfWarRevealer3D))]
@@ -21,6 +22,7 @@ public class PixelPerfectFogOfWarComponent
 {
     FogOfWarRevealer _revealer;
     FogOfWarHider _hider;
+    IGlobalEventPublisher _globalEventPublisher;
 
     [SerializeField, Tooltip("Do you want to completely hide this entity if it's in the fog and not visible? If false, it will be shown according to your Fog of War world setttings.")]
     private bool _hideInFog = true;
@@ -33,17 +35,28 @@ public class PixelPerfectFogOfWarComponent
         _hider.enabled = false;
 
         _hider.OnActiveChanged += _hider_OnActiveChanged;
+        _globalEventPublisher = gameMgr.GetService<IGlobalEventPublisher>();
         Entity.EntityInitiated += Entity_EntityInitiated;
         Entity.FactionUpdateComplete += Entity_FactionUpdateComplete;
-
-
 
         // Building specific events
         if (Entity is Building building)
         {
             building.BuildingBuilt += Building_BuildingBuilt;
         }
+
+        _globalEventPublisher.RaiseEntityVisibilityUpdateGlobal(Entity, new VisibilityEventArgs(false));
         base.OnInit();
+    }
+
+    public void ToggleRevealerState(bool val)
+    {
+        _revealer.enabled = val;
+    }
+
+    public void ToggleHiderState(bool val)
+    {
+        _hider.enabled = val;
     }
 
     private void Building_BuildingBuilt(IBuilding sender, EventArgs args)
@@ -87,6 +100,7 @@ public class PixelPerfectFogOfWarComponent
         {
             if (building.IsPlacementInstance)
             {
+                _globalEventPublisher.RaiseEntityVisibilityUpdateGlobal(Entity, new VisibilityEventArgs(false));
                 return;
             }
         }
@@ -101,6 +115,7 @@ public class PixelPerfectFogOfWarComponent
         {
             _revealer.enabled = false;
 
+
             if (_hideInFog)
             {
                 // Simple trick :)
@@ -108,7 +123,6 @@ public class PixelPerfectFogOfWarComponent
                 _hider.enabled = true;
             }
         }
-
     }
 
     /// <summary>
@@ -120,6 +134,7 @@ public class PixelPerfectFogOfWarComponent
     {
         // Should not be visible..        
         Entity.Model.SetActive(isActive);
+        _globalEventPublisher.RaiseEntityVisibilityUpdateGlobal(Entity, new VisibilityEventArgs(isActive));
     }
 }
 
